@@ -24,11 +24,10 @@ public class DatabaseConfig {
     @Primary
     public DataSource dataSource() {
         String finalUrl = rawUrl;
-        String driverClass = "org.h2.Driver";
+        String driverClass = "org.postgresql.Driver";
 
         if (finalUrl != null && !finalUrl.trim().isEmpty()) {
             finalUrl = finalUrl.trim();
-            // Automatically fix missing jdbc: prefix if user copied postgresql:// directly from Neon
             if (finalUrl.startsWith("postgresql://")) {
                 finalUrl = "jdbc:" + finalUrl;
             }
@@ -40,24 +39,16 @@ public class DatabaseConfig {
             }
         } else {
             finalUrl = "jdbc:h2:mem:recover_ai;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+            driverClass = "org.h2.Driver";
         }
 
-        try {
-            System.out.println(">>> RecoverAI Database Configurer: Initializing DataSource with URL " + finalUrl.replaceAll(":[^/@]+@", ":****@"));
-            return DataSourceBuilder.create()
-                    .url(finalUrl)
-                    .username(username)
-                    .password(password)
-                    .driverClassName(driverClass)
-                    .build();
-        } catch (Exception e) {
-            System.err.println(">>> Database Connection Error, falling back to H2 In-Memory DB: " + e.getMessage());
-            return DataSourceBuilder.create()
-                    .url("jdbc:h2:mem:recover_ai;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE")
-                    .username("sa")
-                    .password("")
-                    .driverClassName("org.h2.Driver")
-                    .build();
-        }
+        System.out.println(">>> RecoverAI Database Configurer: Initializing DataSource with URL " + finalUrl.replaceAll(":[^/@]+@", ":****@"));
+
+        return DataSourceBuilder.create()
+                .url(finalUrl)
+                .username(username)
+                .password(password)
+                .driverClassName(driverClass)
+                .build();
     }
 }
