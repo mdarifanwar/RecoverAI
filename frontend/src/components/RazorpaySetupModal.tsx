@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 
 interface RazorpaySetupModalProps {
   isOpen: boolean;
@@ -6,11 +6,21 @@ interface RazorpaySetupModalProps {
 }
 
 export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupModalProps) {
-  const [keyId, setKeyId] = useState(localStorage.getItem("razorpay_key_id") || "rzp_test_8Xk9Lq201A");
-  const [keySecret, setKeySecret] = useState(localStorage.getItem("razorpay_key_secret") || "••••••••••••••••");
-  const [webhookSecret, setWebhookSecret] = useState(localStorage.getItem("razorpay_webhook_secret") || "recover_ai_sec_123");
+  const currentUserEmail = localStorage.getItem("user_email") || "admin@revenuerecovery.com";
+
+  const [keyId, setKeyId] = useState("");
+  const [keySecret, setKeySecret] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setKeyId(localStorage.getItem(`razorpay_key_id_${currentUserEmail}`) || "");
+      setKeySecret(localStorage.getItem(`razorpay_key_secret_${currentUserEmail}`) || "");
+      setWebhookSecret(localStorage.getItem(`razorpay_webhook_secret_${currentUserEmail}`) || "");
+    }
+  }, [isOpen, currentUserEmail]);
 
   if (!isOpen) return null;
 
@@ -26,13 +36,14 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const currentUserEmail = localStorage.getItem("user_email") || "admin@revenuerecovery.com";
     localStorage.setItem(`razorpay_key_id_${currentUserEmail}`, keyId.trim());
     localStorage.setItem(`razorpay_key_secret_${currentUserEmail}`, keySecret.trim());
-    localStorage.setItem(`razorpay_webhook_secret_${currentUserEmail}`, webhookSecret.trim());
+    if (webhookSecret.trim()) {
+      localStorage.setItem(`razorpay_webhook_secret_${currentUserEmail}`, webhookSecret.trim());
+    }
     localStorage.setItem(`razorpay_connected_${currentUserEmail}`, "true");
 
-    setSuccessMsg("✓ Razorpay Credentials Saved! Webhook listener is now ACTIVE for your merchant account.");
+    setSuccessMsg("✓ Real Razorpay Credentials Saved! Webhook listener is now ACTIVE for your merchant account.");
     setTimeout(() => {
       setSuccessMsg("");
       onClose();
@@ -79,7 +90,7 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "20px" }}>⚡</span>
             <h2 style={{ fontSize: "16px", fontWeight: 800, textTransform: "uppercase", color: "var(--dark-forest)" }}>
-              RAZORPAY ACCOUNT SETUP
+              CONNECT RAZORPAY MERCHANT ACCOUNT
             </h2>
           </div>
           <button
@@ -92,7 +103,7 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
         </div>
 
         <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "20px", lineHeight: 1.4 }}>
-          Connect your Razorpay Merchant account to automatically ingest payment failures in real time and execute AI revenue recovery.
+          Enter your real Razorpay API keys below to connect your merchant account and receive live payment failure webhooks in real time.
         </p>
 
         {successMsg && (
@@ -105,13 +116,13 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
           {/* Key ID */}
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <label style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", color: "var(--dark-forest)" }}>
-              RAZORPAY KEY ID
+              RAZORPAY KEY ID *
             </label>
             <input
               type="text"
               value={keyId}
               onChange={(e) => setKeyId(e.target.value)}
-              placeholder="rzp_test_xxxxxxxxxxxx"
+              placeholder="e.g. rzp_test_xxxxxxxxxxxx or rzp_live_xxxxxxxxxxxx"
               required
               style={{
                 width: "100%",
@@ -128,14 +139,36 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
           {/* Key Secret */}
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <label style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", color: "var(--dark-forest)" }}>
-              RAZORPAY KEY SECRET
+              RAZORPAY KEY SECRET *
             </label>
             <input
               type="password"
               value={keySecret}
               onChange={(e) => setKeySecret(e.target.value)}
-              placeholder="••••••••••••••••"
+              placeholder="Enter your secret key from Razorpay API keys section"
               required
+              style={{
+                width: "100%",
+                padding: "10px 14px",
+                borderRadius: "6px",
+                border: "1px solid var(--border-color)",
+                fontSize: "13px",
+                fontFamily: "var(--font-mono)",
+                backgroundColor: "var(--bg-cream)",
+              }}
+            />
+          </div>
+
+          {/* Webhook Secret Optional */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <label style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "1px", textTransform: "uppercase", color: "var(--dark-forest)" }}>
+              WEBHOOK SECRET (OPTIONAL)
+            </label>
+            <input
+              type="text"
+              value={webhookSecret}
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              placeholder="Optional webhook signature secret"
               style={{
                 width: "100%",
                 padding: "10px 14px",
@@ -190,7 +223,7 @@ export default function RazorpaySetupModal({ isOpen, onClose }: RazorpaySetupMod
               </button>
             </div>
             <span style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
-              Enter this URL under Razorpay Dashboard → Settings → Webhooks (`payment.failed` event).
+              Copy & paste this URL in your Razorpay Dashboard → Settings → Webhooks (`payment.failed` event).
             </span>
           </div>
 
