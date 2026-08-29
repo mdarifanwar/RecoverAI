@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import RecoveryCases from "./pages/RecoveryCases";
@@ -15,11 +15,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function App() {
-  const hasToken = !!localStorage.getItem("token");
+function MainLayout() {
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
 
   return (
-    <BrowserRouter>
+    <>
       <Navbar />
 
       <main>
@@ -59,7 +60,15 @@ function App() {
         </Routes>
       </main>
 
-      {hasToken && <ChatbotWidget />}
+      {!isLoginPage && <ChatbotWidget />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <MainLayout />
     </BrowserRouter>
   );
 }
