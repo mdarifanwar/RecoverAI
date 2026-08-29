@@ -80,7 +80,10 @@ class RecoveryServiceTest {
         when(paymentRepository.findById(1L))
                 .thenReturn(Optional.of(payment));
 
-        when(aiService.decideRecoveryAction(payment))
+        when(recoveryRepository.countRetryAttempts(payment))
+                .thenReturn(0L);
+
+        when(aiService.decideRecoveryAction(payment, 0L))
                 .thenReturn("RETRY_PAYMENT");
 
         when(razorpayService.retryPayment(payment))
@@ -93,13 +96,13 @@ class RecoveryServiceTest {
                 recoveryService.processRecovery(request);
 
         assertEquals(1L, response.getPaymentId());
-        assertEquals("RETRY_INITIATED", response.getStatus());
+        assertEquals("RECOVERED", response.getStatus());
         assertEquals("RETRY_PAYMENT", response.getAction());
 
         verify(paymentRepository).findById(1L);
 
         verify(aiService)
-                .decideRecoveryAction(payment);
+                .decideRecoveryAction(payment, 0L);
 
         verify(razorpayService)
                 .retryPayment(payment);
@@ -111,7 +114,7 @@ class RecoveryServiceTest {
                 .log(
                         1L,
                         "RETRY_PAYMENT",
-                        "RETRY_INITIATED"
+                        "RECOVERED"
                 );
     }
 
@@ -121,7 +124,10 @@ class RecoveryServiceTest {
         when(paymentRepository.findById(1L))
                 .thenReturn(Optional.of(payment));
 
-        when(aiService.decideRecoveryAction(payment))
+        when(recoveryRepository.countRetryAttempts(payment))
+                .thenReturn(0L);
+
+        when(aiService.decideRecoveryAction(payment, 0L))
                 .thenReturn("RETRY_PAYMENT");
 
         when(razorpayService.retryPayment(payment))
@@ -141,7 +147,7 @@ class RecoveryServiceTest {
                 .findById(1L);
 
         verify(aiService)
-                .decideRecoveryAction(payment);
+                .decideRecoveryAction(payment, 0L);
 
         verify(razorpayService)
                 .retryPayment(payment);
@@ -163,7 +169,10 @@ class RecoveryServiceTest {
         when(paymentRepository.findById(1L))
                 .thenReturn(Optional.of(payment));
 
-        when(aiService.decideRecoveryAction(payment))
+        when(recoveryRepository.countRetryAttempts(payment))
+                .thenReturn(0L);
+
+        when(aiService.decideRecoveryAction(payment, 0L))
                 .thenReturn("EVALUATE");
 
         RecoveryRequest request = new RecoveryRequest();
@@ -180,7 +189,7 @@ class RecoveryServiceTest {
                 .findById(1L);
 
         verify(aiService)
-                .decideRecoveryAction(payment);
+                .decideRecoveryAction(payment, 0L);
 
         verify(razorpayService, never())
                 .retryPayment(any());
@@ -219,7 +228,7 @@ class RecoveryServiceTest {
                 .findById(999L);
 
         verify(aiService, never())
-                .decideRecoveryAction(any());
+                .decideRecoveryAction(any(), anyLong());
 
         verify(recoveryRepository, never())
                 .save(any());
