@@ -1,0 +1,32 @@
+# Environment Files (Keep Secrets Out Of Git)
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+
+# Java / Spring Boot Backend
+target/
+*.class
+*.jar
+*.war
+
+# Python / AI Service
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
