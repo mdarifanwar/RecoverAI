@@ -7,61 +7,46 @@ from openai import OpenAI
 from app.models.schemas import PaymentInput, AIDecisionResponse
 from app.services.prompt_service import build_recovery_prompt
 
-
 load_dotenv()
 
 
 class AIService:
 
     def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY", "").strip()
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
-        api_key = os.getenv("OPENAI_API_KEY")
-
-        if not api_key:
-            raise ValueError(
-                "OPENAI_API_KEY is missing. "
-                "Make sure your .env file exists in the ai-service folder."
-            )
-
-        self.client = OpenAI(
-            api_key=api_key
-        )
-
-        self.model = os.getenv(
-            "OPENAI_MODEL",
-            "gpt-5.5"
-        )
+        if api_key and api_key != "your_openai_api_key_here":
+            try:
+                self.client = OpenAI(api_key=api_key)
+            except Exception as e:
+                print(f"OpenAI Client Init Notice: {e}")
+                self.client = None
+        else:
+            self.client = None
 
     def decide_recovery(
         self,
         payment: PaymentInput
     ) -> AIDecisionResponse:
-
-        prompt = build_recovery_prompt(payment)
-
-        response = self.client.responses.create(
-            model=self.model,
-            input=prompt
-        )
-
-        result_text = response.output_text.strip()
+        if not self.client:
+            return self._fallback_decision(payment)
 
         try:
-
+            prompt = build_recovery_prompt(payment)
+            response = self.client.responses.create(
+                model=self.model,
+                input=prompt
+            )
+            result_text = response.output_text.strip()
             result = json.loads(result_text)
-
             return AIDecisionResponse(
                 payment_id=payment.payment_id,
                 recommendation=result["recommendation"],
                 reason=result["reason"]
             )
-
-        except (
-            json.JSONDecodeError,
-            KeyError,
-            TypeError
-        ):
-
+        except Exception as e:
+            print(f"OpenAI Decision Fallback: {e}")
             return self._fallback_decision(payment)
 
     def _fallback_decision(
