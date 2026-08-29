@@ -10,6 +10,8 @@ class PaymentInput(BaseModel):
     retry_count: int = Field(default=0, ge=0)
     customer_id: int | None = None
     failure_reason: str | None = "UNKNOWN"
+    payment_method: str | None = "CARD"
+    previous_success_rate: float | None = 0.85
     escalation_stage: int = Field(default=1, ge=1)
 
 
@@ -23,3 +25,4 @@ class AIDecisionResponse(BaseModel):
         "EVALUATE"
     ]
     reason: str
+    probability_of_recovery: float = 0.85
