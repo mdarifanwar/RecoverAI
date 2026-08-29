@@ -84,7 +84,7 @@ public class WebhookController {
         payment = paymentRepository.save(payment);
 
         // 2. Evaluate AI Rule & create recovery attempt
-        String recommendedAction = recoveryRules.determineAction(payment, 0);
+        String recommendedAction = recoveryRules.decideAction(payment, 0);
         RecoveryAttempt attempt = new RecoveryAttempt(
                 payment,
                 recommendedAction,
