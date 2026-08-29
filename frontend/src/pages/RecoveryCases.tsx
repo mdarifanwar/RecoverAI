@@ -55,21 +55,29 @@ export default function RecoveryCases() {
   const [successMessage, setSuccessMessage] = useState("");
   const [filter, setFilter] = useState<"ALL" | "RECOVERED" | "PENDING">("ALL");
 
+  const currentUserEmail = localStorage.getItem("user_email") || "admin@revenuerecovery.com";
+  const isDefaultAdmin = currentUserEmail === "admin@revenuerecovery.com";
+
   useEffect(() => {
     loadRecoveryCases();
     const interval = setInterval(loadRecoveryCases, 5000); // 5-second Real-Time polling
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUserEmail]);
 
   async function loadRecoveryCases() {
     try {
       setLoading(true);
       setError("");
       const data = await getRecoveryCases();
-      setRecoveryCases(data && data.length > 0 ? data : defaultFallbackCases);
+      if (data && data.length > 0) {
+        setRecoveryCases(data);
+      } else {
+        // Show fallback data only for default admin account
+        setRecoveryCases(isDefaultAdmin ? defaultFallbackCases : []);
+      }
     } catch (err) {
       console.warn("Using recovery cases fallback:", err);
-      setRecoveryCases(defaultFallbackCases);
+      setRecoveryCases(isDefaultAdmin ? defaultFallbackCases : []);
     } finally {
       setLoading(false);
     }
@@ -303,7 +311,10 @@ export default function RecoveryCases() {
 
         {filteredCases.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
-            <h3>NO CASES MATCH SEARCH "{searchQuery}"</h3>
+            <h3 style={{ color: "var(--dark-forest)", margin: "0 0 8px 0" }}>⚡ NO PAYMENT CASES RECORDED YET</h3>
+            <p style={{ margin: 0, fontSize: "13px" }}>
+              New cases will appear automatically when incoming Razorpay Webhooks fail or when you simulate test payments.
+            </p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>

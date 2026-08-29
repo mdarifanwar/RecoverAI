@@ -33,21 +33,28 @@ export default function AuditLogs() {
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<"ALL" | "RECOVERIES" | "ACTIONS">("ALL");
 
+  const currentUserEmail = localStorage.getItem("user_email") || "admin@revenuerecovery.com";
+  const isDefaultAdmin = currentUserEmail === "admin@revenuerecovery.com";
+
   useEffect(() => {
     loadAuditLogs();
     const interval = setInterval(loadAuditLogs, 5000); // 5-second Real-Time polling
     return () => clearInterval(interval);
-  }, []);
+  }, [currentUserEmail]);
 
   async function loadAuditLogs() {
     try {
       setLoading(true);
       setError("");
       const data = await getAuditLogs();
-      setAuditLogs(data && data.length > 0 ? data : defaultFallbackAuditLogs);
+      if (data && data.length > 0) {
+        setAuditLogs(data);
+      } else {
+        setAuditLogs(isDefaultAdmin ? defaultFallbackAuditLogs : []);
+      }
     } catch (err) {
       console.warn("Using audit logs fallback:", err);
-      setAuditLogs(defaultFallbackAuditLogs);
+      setAuditLogs(isDefaultAdmin ? defaultFallbackAuditLogs : []);
     } finally {
       setLoading(false);
     }
@@ -229,7 +236,10 @@ export default function AuditLogs() {
 
         {filteredLogs.length === 0 ? (
           <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
-            <h3>NO AUDIT LOGS MATCH FILTER</h3>
+            <h3 style={{ color: "var(--dark-forest)", margin: "0 0 8px 0" }}>⚡ NO AUDIT LOGS RECORDED YET</h3>
+            <p style={{ margin: 0, fontSize: "13px" }}>
+              Audit entries will record automatically when recovery actions are executed for <strong>{currentUserEmail}</strong>.
+            </p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>

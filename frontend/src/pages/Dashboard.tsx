@@ -132,6 +132,14 @@ export default function Dashboard() {
     localStorage.setItem(storageKey, JSON.stringify(newData));
   }
 
+  function handleResetTestData() {
+    localStorage.removeItem(storageKey);
+    const freshData = isDefaultAdmin ? defaultAdminDashboardData : emptyNewUserDashboardData;
+    setDashboard(freshData);
+    setSimulatedMsg("🗑 Merchant session reset to 0. All test data cleared.");
+    setTimeout(() => setSimulatedMsg(""), 4000);
+  }
+
   async function handleRunBatch() {
     if (!dashboard) return;
     try {
@@ -211,7 +219,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="alert-badges" style={{ display: "flex", gap: "10px" }}>
+        <div className="alert-badges" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
           <button
             className="pulm-btn"
             onClick={handleSimulateNewFailedPayment}
@@ -236,6 +244,21 @@ export default function Dashboard() {
           >
             {batchProcessing ? "RUNNING BATCH ENGINE..." : "⚡ RUN BATCH RECOVERY SIMULATION"}
           </button>
+
+          {recentCases.length > 0 && !isDefaultAdmin && (
+            <button
+              className="pulm-btn"
+              onClick={handleResetTestData}
+              style={{
+                padding: "10px 14px",
+                backgroundColor: "#fce8e6",
+                color: "#a82a24",
+                border: "1px solid #a82a24",
+              }}
+            >
+              🗑 RESET TEST DATA
+            </button>
+          )}
         </div>
       </div>
 
