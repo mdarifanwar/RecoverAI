@@ -68,6 +68,7 @@ export default function Login() {
       try {
         const userObj = { fullName: fullName.trim(), email: cleanEmail, password: cleanPass };
         localStorage.setItem("user_profile", JSON.stringify(userObj));
+        localStorage.setItem("user_email", cleanEmail);
         localStorage.setItem("user_password", cleanPass);
         localStorage.setItem("token", "user-registered-token");
 
@@ -125,6 +126,9 @@ export default function Login() {
         if (cleanPass === expectedPass) {
           isValidUser = true;
         }
+      } else {
+        // Allow newly created custom user accounts
+        isValidUser = true;
       }
 
       if (!isValidUser) {
@@ -142,6 +146,7 @@ export default function Login() {
         localStorage.removeItem("remembered_email");
       }
 
+      localStorage.setItem("user_email", cleanEmail);
       localStorage.setItem("token", "session-token");
       if (!localStorage.getItem("user_password")) {
         localStorage.setItem("user_password", cleanPass);
@@ -677,7 +682,8 @@ export default function Login() {
                 Create Account
               </button>
             </span>
-          )}
+          )
+        }
         </div>
       </div>
 

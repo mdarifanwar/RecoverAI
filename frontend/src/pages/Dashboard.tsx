@@ -20,7 +20,7 @@ interface DashboardData {
   recentRecoveryCases: RecentRecoveryCase[];
 }
 
-const defaultDashboardData: DashboardData = {
+const defaultAdminDashboardData: DashboardData = {
   totalPayments: 12,
   totalRecoveryAttempts: 8,
   totalRevenueAtRisk: 14500,
@@ -58,6 +58,15 @@ const defaultDashboardData: DashboardData = {
   ],
 };
 
+const emptyNewUserDashboardData: DashboardData = {
+  totalPayments: 0,
+  totalRecoveryAttempts: 0,
+  totalRevenueAtRisk: 0,
+  totalRevenueRecovered: 0,
+  recoveryRatePercentage: 100.0,
+  recentRecoveryCases: [],
+};
+
 export default function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,33 +74,74 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [simulatedMsg, setSimulatedMsg] = useState("");
 
+  const currentUserEmail = localStorage.getItem("user_email") || "admin@revenuerecovery.com";
+  const isDefaultAdmin = currentUserEmail === "admin@revenuerecovery.com";
+
+  let displayName = "Admin";
+  const profileStr = localStorage.getItem("user_profile");
+  if (profileStr) {
+    try {
+      const p = JSON.parse(profileStr);
+      if (p.fullName) displayName = p.fullName;
+      else if (currentUserEmail) displayName = currentUserEmail.split("@")[0];
+    } catch (e) {
+      console.error(e);
+    }
+  } else if (!isDefaultAdmin && currentUserEmail) {
+    displayName = currentUserEmail.split("@")[0];
+  }
+
+  const storageKey = `dashboard_data_${currentUserEmail}`;
+
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [currentUserEmail]);
 
   async function loadDashboard() {
     try {
       setLoading(true);
       setError("");
+      
+      // Try live backend API first
       const data = await apiRequest("/dashboard");
       setDashboard(data);
     } catch (err) {
-      console.warn("Using dashboard data fallback:", err);
-      setDashboard(defaultDashboardData);
+      console.warn("Using isolated merchant session dashboard fallback:", err);
+
+      // Check user-specific localStorage session
+      const savedUserSession = localStorage.getItem(storageKey);
+      if (savedUserSession) {
+        try {
+          setDashboard(JSON.parse(savedUserSession));
+        } catch (e) {
+          console.error(e);
+          setDashboard(isDefaultAdmin ? defaultAdminDashboardData : emptyNewUserDashboardData);
+        }
+      } else {
+        const initialData = isDefaultAdmin ? defaultAdminDashboardData : emptyNewUserDashboardData;
+        setDashboard(initialData);
+        localStorage.setItem(storageKey, JSON.stringify(initialData));
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  function updateDashboardState(newData: DashboardData) {
+    setDashboard(newData);
+    localStorage.setItem(storageKey, JSON.stringify(newData));
+  }
+
   async function handleRunBatch() {
+    if (!dashboard) return;
     try {
       setBatchProcessing(true);
       await processBatchRecovery();
       await loadDashboard();
     } catch (err) {
       console.warn("Batch recovery execution fallback:", err);
-      if (dashboard) {
-        setDashboard({
+      if (dashboard.recentRecoveryCases.length > 0) {
+        const updated = {
           ...dashboard,
           totalRevenueRecovered: dashboard.totalRevenueRecovered + 2500,
           totalRevenueAtRisk: Math.max(0, dashboard.totalRevenueAtRisk - 2500),
@@ -99,7 +149,11 @@ export default function Dashboard() {
           recentRecoveryCases: dashboard.recentRecoveryCases.map((c) =>
             c.paymentId === 101 ? { ...c, status: "RECOVERED", message: "Recovered via Batch Simulation" } : c
           ),
-        });
+        };
+        updateDashboardState(updated);
+      } else {
+        setSimulatedMsg("⚡ Batch engine ran! No active payment failures to recover. Click '+ SIMULATE NEW FAILED PAYMENT' first.");
+        setTimeout(() => setSimulatedMsg(""), 5000);
       }
     } finally {
       setBatchProcessing(false);
@@ -121,12 +175,14 @@ export default function Dashboard() {
       failureReason: reason,
     };
 
-    setDashboard({
+    const updated: DashboardData = {
       ...dashboard,
       totalPayments: dashboard.totalPayments + 1,
       totalRevenueAtRisk: dashboard.totalRevenueAtRisk + newAmount,
       recentRecoveryCases: [newCase, ...dashboard.recentRecoveryCases],
-    });
+    };
+
+    updateDashboardState(updated);
 
     setSimulatedMsg(`⚡ Simulated new Razorpay payment failure (Payment #${newId} - ₹${newAmount.toFixed(2)}). AI is evaluating recovery.`);
     setTimeout(() => setSimulatedMsg(""), 5000);
@@ -151,7 +207,7 @@ export default function Dashboard() {
         <div className="overview-title">
           <h1>Today's Overview</h1>
           <p className="overview-subtitle">
-            Hello, Admin! You have {recentCases.length} at-risk alerts.
+            Hello, {displayName}! {recentCases.length > 0 ? `You have ${recentCases.length} active case(s).` : "Welcome to your new merchant recovery dashboard."}
           </p>
         </div>
 
@@ -255,8 +311,22 @@ export default function Dashboard() {
 
             {recentCases.length === 0 ? (
               <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
-                <h3>NO PENDING CASES</h3>
-                <p>Click "+ SIMULATE NEW FAILED PAYMENT" to test new incoming webhooks.</p>
+                <h3 style={{ color: "var(--dark-forest)", margin: "0 0 8px 0" }}>⚡ FRESH MERCHANT ACCOUNT READY</h3>
+                <p style={{ margin: "0 0 16px 0", fontSize: "13px" }}>
+                  No payment failures recorded yet for <strong>{currentUserEmail}</strong>.
+                </p>
+                <button
+                  className="pulm-btn"
+                  onClick={handleSimulateNewFailedPayment}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "var(--sage-accent)",
+                    color: "var(--dark-forest)",
+                    fontSize: "12px",
+                  }}
+                >
+                  + SIMULATE NEW FAILED PAYMENT
+                </button>
               </div>
             ) : (
               <div className="review-item-list" style={{ gap: "12px" }}>
