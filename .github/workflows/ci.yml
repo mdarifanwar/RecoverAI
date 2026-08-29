@@ -82,4 +82,4 @@ jobs:
           pip install pytest
 
       - name: Run Pytest Suite
-        run: pytest
+        run: PYTHONPATH=. pytest

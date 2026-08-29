@@ -30,7 +30,7 @@ class AIServiceTest {
 
     @BeforeEach
     void setUp() {
-        aiService = new AIService(aiDecisionRepository);
+        aiService = new AIService(aiDecisionRepository, "http://localhost:8000");
     }
 
     @Test
@@ -88,7 +88,7 @@ class AIServiceTest {
     }
 
     @Test
-    void shouldRecommendNoActionForUnknownStatus() {
+    void shouldRecommendEvaluateForUnknownStatus() {
 
         Payment payment = new Payment(
                 "pay_test_004",
@@ -99,7 +99,7 @@ class AIServiceTest {
 
         String result = aiService.decideRecoveryAction(payment);
 
-        assertEquals("NO_ACTION", result);
+        assertEquals("EVALUATE", result);
 
         verify(aiDecisionRepository)
                 .save(any(AIDecision.class));
