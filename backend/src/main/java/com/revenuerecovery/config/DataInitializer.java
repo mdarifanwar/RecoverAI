@@ -20,14 +20,18 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initDatabase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            if (!userRepository.existsByEmail(adminEmail)) {
-                User admin = new User(
-                        adminEmail,
-                        passwordEncoder.encode(adminPassword),
-                        "ADMIN"
-                );
-                userRepository.save(admin);
-                System.out.println(">>> Initialized default admin user: " + adminEmail);
+            try {
+                if (!userRepository.existsByEmail(adminEmail)) {
+                    User admin = new User(
+                            adminEmail,
+                            passwordEncoder.encode(adminPassword),
+                            "ADMIN"
+                    );
+                    userRepository.save(admin);
+                    System.out.println(">>> Initialized default admin user: " + adminEmail);
+                }
+            } catch (Exception e) {
+                System.out.println(">>> DataInitializer notice: " + e.getMessage());
             }
         };
     }
